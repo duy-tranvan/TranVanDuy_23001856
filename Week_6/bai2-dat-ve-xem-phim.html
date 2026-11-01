@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bài 2 - Đặt vé xem phim</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.21/vue.global.prod.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+
+    [v-cloak] { display: none; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 32px 16px;
+      display: flex;
+      justify-content: center;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: #ebe8f0;
+      color: #221c2b;
+    }
+
+    #app { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 20px; }
+
+    /* Thông báo khi không tải được Vue hoặc ứng dụng gặp lỗi nghiêm trọng */
+    .loi-he-thong {
+      margin: 0;
+      padding: 16px 18px;
+      background: #fdecea;
+      color: #8c1d18;
+      border-left: 5px solid #b3261e;
+      border-radius: 8px;
+      line-height: 1.5;
+    }
+
+    .khung {
+      background: #ffffff;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 6px 24px rgba(52, 24, 70, 0.14);
+    }
+    .khung-dau { background: #3f1d4f; color: #ffffff; padding: 16px 22px; }
+    .khung-dau h1 { margin: 0; font-size: 1.25rem; }
+    .khung-dau p { margin: 4px 0 0; font-size: 0.9rem; color: #d9c8e4; }
+    .khung-than { padding: 22px; }
+
+    .truong { margin-bottom: 18px; }
+    .truong > label,
+    .truong > legend {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 0;
+    }
+    fieldset { border: 0; margin: 0 0 18px; padding: 0; }
+    fieldset legend { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.95rem; padding: 0; }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      font: inherit;
+      border: 1px solid #bdb4c8;
+      border-radius: 8px;
+      background: #ffffff;
+    }
+    input.sai,
+    select.sai { border-color: #b3261e; background: #fff8f7; }
+    input:focus-visible,
+    select:focus-visible,
+    button:focus-visible { outline: 3px solid #9b6bd1; outline-offset: 2px; }
+
+    .lua-chon {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid #d6cfde;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+    .lua-chon:has(input:checked) { border-color: #3f1d4f; background: #f5eff9; }
+    .lua-chon .gia { margin-left: auto; font-weight: 600; }
+
+    .so-luong { display: flex; gap: 8px; }
+    .so-luong input { text-align: center; }
+    .nut-so {
+      width: 44px;
+      flex-shrink: 0;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #3f1d4f;
+      background: #ffffff;
+      border: 1px solid #3f1d4f;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .nut-so:disabled { color: #a79cb3; border-color: #cfc7d8; cursor: not-allowed; }
+
+    .loi { margin: 6px 0 0; color: #b3261e; font-size: 0.9rem; }
+    .loi-gui { margin: 0 0 12px; padding: 10px 12px; background: #fdecea; color: #8c1d18; border-radius: 8px; font-size: 0.92rem; }
+
+    .tong-tien {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+      background: #f5eff9;
+      border-radius: 10px;
+    }
+    .tong-tien strong { font-size: 1.4rem; color: #3f1d4f; }
+
+    .hanh-dong { display: flex; gap: 10px; }
+    .nut {
+      flex: 1;
+      padding: 12px 16px;
+      font: inherit;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .nut-dat { color: #ffffff; background: #3f1d4f; border: 1px solid #3f1d4f; }
+    .nut-dat:hover:not(:disabled) { background: #57296b; }
+    .nut-dat:disabled { background: #b9aec4; border-color: #b9aec4; cursor: not-allowed; }
+    .nut-lai { color: #3f1d4f; background: #ffffff; border: 1px solid #3f1d4f; }
+    .nut-lai:hover { background: #f5eff9; }
+
+    /* ===== Xác nhận đặt vé ===== */
+    .xac-nhan { border-left: 6px solid #1b7f4b; }
+    .xac-nhan h2 { margin: 0 0 12px; font-size: 1.1rem; color: #1b7f4b; }
+    .xac-nhan dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; }
+    .xac-nhan dt { color: #5d5468; }
+    .xac-nhan dd { margin: 0; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+    .xac-nhan .cuoi { grid-column: 1 / -1; border-top: 1px solid #e0d9e7; padding-top: 10px; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+  <div id="app" v-cloak>
+
+    <section class="khung">
+      <header class="khung-dau">
+        <h1>Đặt vé xem phim</h1>
+        <p>{{ tenPhim }}</p>
+      </header>
+
+      <!-- Yêu cầu 9: gửi form bằng @submit.prevent -->
+      <form class="khung-than" @submit.prevent="datVe" novalidate>
+
+        <!-- Yêu cầu 1: họ tên với v-model.trim -->
+        <div class="truong">
+          <label for="ho-ten">Họ tên khách hàng</label>
+          <input id="ho-ten" type="text" v-model.trim="hoTen" @blur="daChamHoTen = true"
+                 placeholder="Ví dụ: Nguyễn Văn An" autocomplete="name" maxlength="80"
+                 :class="{ sai: hienLoiHoTen }" :aria-invalid="hienLoiHoTen ? 'true' : 'false'">
+          <p class="loi" v-if="hienLoiHoTen" role="alert">{{ loiHoTen }}</p>
+        </div>
+
+        <!-- Yêu cầu 2: chọn suất chiếu bằng select -->
+        <div class="truong">
+          <label for="suat-chieu">Suất chiếu</label>
+          <select id="suat-chieu" v-model="suatChieu" :class="{ sai: loiSuat }">
+            <option v-for="suat in danhSachSuat" :key="suat" :value="suat">{{ suat }}</option>
+          </select>
+          <p class="loi" v-if="loiSuat" role="alert">{{ loiSuat }}</p>
+        </div>
+
+        <!-- Yêu cầu 3: chọn loại vé bằng radio -->
+        <fieldset>
+          <legend>Loại vé</legend>
+          <label class="lua-chon">
+            <input type="radio" value="thuong" v-model="loaiVe">
+            Vé thường
+            <span class="gia">{{ dinhDangTien(giaVe.thuong) }}</span>
+          </label>
+          <label class="lua-chon">
+            <input type="radio" value="vip" v-model="loaiVe">
+            Vé VIP
+            <span class="gia">{{ dinhDangTien(giaVe.vip) }}</span>
+          </label>
+          <p class="loi" v-if="loiLoaiVe" role="alert">{{ loiLoaiVe }}</p>
+        </fieldset>
+
+        <!-- Yêu cầu 4 + 7: số lượng với v-model.number, nút tăng/giảm -->
+        <div class="truong">
+          <label for="so-luong">Số lượng vé (từ 1 đến 10)</label>
+          <div class="so-luong">
+            <button type="button" class="nut-so" @click="giamSoLuong" :disabled="soLuongHopLe && soLuong <= 1" aria-label="Giảm số lượng">−</button>
+            <input id="so-luong" type="number" v-model.number="soLuong" min="1" max="10" step="1" inputmode="numeric"
+                   :class="{ sai: loiSoLuong }" :aria-invalid="loiSoLuong ? 'true' : 'false'">
+            <button type="button" class="nut-so" @click="tangSoLuong" :disabled="soLuongHopLe && soLuong >= 10" aria-label="Tăng số lượng">+</button>
+          </div>
+          <p class="loi" v-if="loiSoLuong" role="alert">{{ loiSoLuong }}</p>
+        </div>
+
+        <!-- Yêu cầu 5: checkbox combo bắp nước -->
+        <label class="lua-chon">
+          <input type="checkbox" v-model="coCombo">
+          Combo bắp nước (mỗi đơn đặt vé)
+          <span class="gia">{{ dinhDangTien(giaCombo) }}</span>
+        </label>
+
+        <!-- Yêu cầu 6: tổng tiền từ computed -->
+        <div class="tong-tien">
+          <span>Tổng tiền</span>
+          <strong>{{ dinhDangTien(tongTien) }}</strong>
+        </div>
+
+        <!-- Ngoại lệ: lỗi khi gửi form -->
+        <p class="loi-gui" v-if="loiGui" role="alert">{{ loiGui }}</p>
+
+        <div class="hanh-dong">
+          <button type="button" class="nut nut-lai" @click="datLai">Đặt lại</button>
+          <!-- Yêu cầu 8: chỉ bật khi họ tên và số lượng hợp lệ -->
+          <button type="submit" class="nut nut-dat" :disabled="!choPhepDat">Đặt vé</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Yêu cầu 9: thông tin xác nhận hiển thị ngay trên trang -->
+    <section class="khung xac-nhan" v-if="xacNhan" role="status">
+      <div class="khung-than">
+        <h2>Đặt vé thành công</h2>
+        <dl>
+          <dt>Khách hàng</dt><dd>{{ xacNhan.hoTen }}</dd>
+          <dt>Phim</dt><dd>{{ xacNhan.tenPhim }}</dd>
+          <dt>Suất chiếu</dt><dd>{{ xacNhan.suatChieu }}</dd>
+          <dt>Loại vé</dt><dd>{{ xacNhan.tenLoaiVe }}</dd>
+          <dt>Số lượng</dt><dd>{{ xacNhan.soLuong }}</dd>
+          <dt>Combo bắp nước</dt><dd>{{ xacNhan.coCombo ? 'Có' : 'Không' }}</dd>
+          <dt class="cuoi">Tổng tiền</dt><dd class="cuoi">{{ dinhDangTien(xacNhan.tongTien) }}</dd>
+        </dl>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    // Hiển thị lỗi hệ thống ngay trên trang (thay cho trang trắng)
+    function hienLoiHeThong(noiDung) {
+      const goc = document.getElementById('app');
+      goc.removeAttribute('v-cloak');
+      goc.innerHTML = '<p class="loi-he-thong" role="alert"></p>';
+      goc.firstChild.textContent = noiDung;
+    }
+
+    if (typeof Vue === 'undefined') {
+      // Ngoại lệ: không tải được thư viện Vue (mất mạng, bị chặn CDN...)
+      hienLoiHeThong('Không tải được thư viện Vue. Hãy kiểm tra kết nối mạng rồi tải lại trang.');
+    } else {
+      const { createApp } = Vue;
+
+      const app = createApp({
+        data() {
+          return {
+            tenPhim: 'Chuyến tàu đêm',
+            danhSachSuat: [
+              'Thứ Bảy 09:30 - Phòng 1',
+              'Thứ Bảy 14:00 - Phòng 2',
+              'Thứ Bảy 19:45 - Phòng 1',
+              'Chủ Nhật 21:15 - Phòng 3'
+            ],
+            giaVe: { thuong: 70000, vip: 100000 },
+            giaCombo: 45000,
+
+            // Dữ liệu của form
+            hoTen: '',
+            suatChieu: 'Thứ Bảy 09:30 - Phòng 1',
+            loaiVe: 'thuong',
+            soLuong: 1,
+            coCombo: false,
+
+            // Trạng thái hiển thị lỗi và kết quả
+            daChamHoTen: false,   // đã rời khỏi ô họ tên ít nhất một lần
+            daThuGui: false,      // đã bấm gửi form ít nhất một lần
+            loiGui: '',           // thông báo lỗi khi gửi form
+            xacNhan: null         // thông tin xác nhận sau khi đặt (null = chưa đặt)
+          };
+        },
+
+        computed: {
+          // ----- Họ tên -----
+          // Thông báo lỗi họ tên ('' nghĩa là hợp lệ)
+          loiHoTen() {
+            const ten = typeof this.hoTen === 'string' ? this.hoTen.trim() : '';
+            if (ten === '') return 'Vui lòng nhập họ tên.';
+            if (ten.length > 50) return 'Họ tên tối đa 50 ký tự.';
+            if (!/^[\p{L}\p{M}][\p{L}\p{M}\s'.-]*$/u.test(ten)) {
+              return 'Họ tên chỉ gồm chữ cái và khoảng trắng.';
+            }
+            return '';
+          },
+          // Chỉ hiện lỗi họ tên sau khi người dùng đã nhập xong hoặc đã thử gửi
+          hienLoiHoTen() {
+            return (this.daChamHoTen || this.daThuGui) && this.loiHoTen !== '';
+          },
+
+          // ----- Suất chiếu và loại vé -----
+          loiSuat() {
+            return this.danhSachSuat.includes(this.suatChieu) ? '' : 'Suất chiếu không hợp lệ, vui lòng chọn lại.';
+          },
+          // Giá một vé theo loại vé đang chọn (null nếu loại vé không hợp lệ)
+          giaMotVe() {
+            const gia = this.giaVe[this.loaiVe];
+            return Number.isFinite(gia) ? gia : null;
+          },
+          loiLoaiVe() {
+            return this.giaMotVe === null ? 'Loại vé không hợp lệ, vui lòng chọn lại.' : '';
+          },
+          tenLoaiVe() {
+            return this.loaiVe === 'vip' ? 'Vé VIP' : 'Vé thường';
+          },
+
+          // ----- Số lượng -----
+          // Thông báo lỗi số lượng ('' nghĩa là hợp lệ): số nguyên từ 1 đến 10
+          loiSoLuong() {
+            const so = this.soLuong;
+            if (so === '' || so === null || so === undefined) return 'Vui lòng nhập số lượng vé.';
+            if (typeof so !== 'number' || !Number.isFinite(so)) return 'Số lượng phải là một số.';
+            if (!Number.isInteger(so)) return 'Số lượng phải là số nguyên.';
+            if (so < 1 || so > 10) return 'Số lượng phải từ 1 đến 10.';
+            return '';
+          },
+          soLuongHopLe() {
+            return this.loiSoLuong === '';
+          },
+
+          // Yêu cầu 8: điều kiện bật nút "Đặt vé"
+          choPhepDat() {
+            return this.loiHoTen === '' && this.soLuongHopLe && this.loiSuat === '' && this.loiLoaiVe === '';
+          },
+
+          // Yêu cầu 6: Tổng tiền = Giá vé × Số lượng + Tiền combo
+          tongTien() {
+            if (!this.soLuongHopLe || this.giaMotVe === null) return 0;
+            const tienCombo = this.coCombo === true ? this.giaCombo : 0;
+            return this.giaMotVe * this.soLuong + tienCombo;
+          }
+        },
+
+        watch: {
+          // Khi người dùng sửa form về trạng thái hợp lệ thì xoá thông báo lỗi gửi form
+          choPhepDat(hopLe) {
+            if (hopLe) this.loiGui = '';
+          }
+        },
+
+        methods: {
+          dinhDangTien(so) {
+            return Number.isFinite(so) ? so.toLocaleString('vi-VN') + ' đồng' : '—';
+          },
+
+          // Yêu cầu 7: tăng / giảm số lượng (nếu đang nhập sai thì đưa về 1)
+          tangSoLuong() {
+            this.soLuong = this.soLuongHopLe ? Math.min(10, this.soLuong + 1) : 1;
+          },
+          giamSoLuong() {
+            this.soLuong = this.soLuongHopLe ? Math.max(1, this.soLuong - 1) : 1;
+          },
+
+          // Yêu cầu 9: lưu lại bản chụp thông tin tại thời điểm đặt
+          datVe() {
+            this.daThuGui = true;
+            this.loiGui = '';
+
+            if (!this.choPhepDat) {
+              this.xacNhan = null;
+              this.loiGui = 'Vui lòng kiểm tra lại thông tin đặt vé.';
+              return;
+            }
+
+            try {
+              this.xacNhan = {
+                hoTen: this.hoTen.trim().replace(/\s+/g, ' '),
+                tenPhim: this.tenPhim,
+                suatChieu: this.suatChieu,
+                tenLoaiVe: this.tenLoaiVe,
+                soLuong: this.soLuong,
+                coCombo: this.coCombo === true,
+                tongTien: this.tongTien
+              };
+            } catch (loi) {
+              console.error('Lỗi khi đặt vé:', loi);
+              this.xacNhan = null;
+              this.loiGui = 'Không thể đặt vé lúc này, vui lòng thử lại.';
+            }
+          },
+
+          // Yêu cầu 7: đặt lại form
+          datLai() {
+            this.hoTen = '';
+            this.suatChieu = this.danhSachSuat[0];
+            this.loaiVe = 'thuong';
+            this.soLuong = 1;
+            this.coCombo = false;
+            this.daChamHoTen = false;
+            this.daThuGui = false;
+            this.loiGui = '';
+            this.xacNhan = null;
+          }
+        }
+      });
+
+      // Ghi lại lỗi phát sinh trong lúc chạy thay vì làm hỏng cả trang
+      app.config.errorHandler = (loi) => {
+        console.error('Lỗi trong ứng dụng Vue:', loi);
+      };
+
+      try {
+        window.app = app.mount('#app');
+      } catch (loi) {
+        console.error(loi);
+        hienLoiHeThong('Không thể khởi động ứng dụng. Hãy tải lại trang hoặc mở Console để xem chi tiết.');
+      }
+    }
+  </script>
+</body>
+</html>
