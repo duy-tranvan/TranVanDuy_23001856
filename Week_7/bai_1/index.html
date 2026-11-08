@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quản lý sản phẩm</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.prod.js"></script>
+</head>
+<body>
+<div id="app" class="wrap">
+  <header>
+    <h1>Quản lý sản phẩm</h1>
+    <div class="status">Trạng thái trang: <b>{{ pageStatus }}</b></div>
+  </header>
+
+  <!-- Chức năng 2, 3, 4, 5, 9: tìm kiếm, lọc, sắp xếp, thông báo từ khóa -->
+  <section class="panel">
+    <h2>Tìm kiếm, lọc và sắp xếp</h2>
+    <div class="row">
+      <div class="field">
+        <label for="kw">Tìm theo tên</label>
+        <input id="kw" v-model="keyword" placeholder="Nhập tên sản phẩm">
+      </div>
+      <div class="field">
+        <label for="cat">Danh mục</label>
+        <select id="cat" v-model="category">
+          <option value="">Tất cả danh mục</option>
+          <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="sort">Sắp xếp theo giá</label>
+        <select id="sort" v-model="sortOrder">
+          <option value="">Mặc định</option>
+          <option value="asc">Giá tăng dần</option>
+          <option value="desc">Giá giảm dần</option>
+        </select>
+      </div>
+    </div>
+    <div v-if="keywordNotice" class="notice" role="status">{{ keywordNotice }}</div>
+  </section>
+
+  <!-- Chức năng 6: thêm sản phẩm -->
+  <section class="panel">
+    <h2>Thêm sản phẩm</h2>
+    <div class="row">
+      <div class="field">
+        <label for="n-name">Tên</label>
+        <input id="n-name" v-model="form.name" :class="{invalid: errors.name}">
+        <div class="err">{{ errors.name }}</div>
+      </div>
+      <div class="field">
+        <label for="n-price">Giá (VNĐ)</label>
+        <input id="n-price" v-model="form.price" inputmode="decimal" :class="{invalid: errors.price}">
+        <div class="err">{{ errors.price }}</div>
+      </div>
+      <div class="field">
+        <label for="n-cat">Danh mục</label>
+        <input id="n-cat" v-model="form.category" list="cat-list" :class="{invalid: errors.category}">
+        <datalist id="cat-list"><option v-for="c in categories" :key="c" :value="c"></option></datalist>
+        <div class="err">{{ errors.category }}</div>
+      </div>
+      <div class="field">
+        <label for="n-stock">Tồn kho</label>
+        <input id="n-stock" v-model="form.stock" inputmode="numeric" :class="{invalid: errors.stock}">
+        <div class="err">{{ errors.stock }}</div>
+      </div>
+      <div class="field" style="flex:0 0 auto">
+        <button type="button" @click="addProduct">Thêm sản phẩm</button>
+        <div class="err">&nbsp;</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Chức năng 1, 7, 8: bảng, xóa, thống kê -->
+  <section class="panel">
+    <div class="stats">
+      <div><span>Đang hiển thị</span><strong>{{ visibleCount }} / {{ totalCount }} sản phẩm</strong></div>
+      <div><span>Tổng giá trị tồn kho (đang hiển thị)</span><strong>{{ formatMoney(visibleStockValue) }}</strong></div>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Tên</th><th>Danh mục</th>
+            <th class="num">Giá</th><th class="num">Tồn kho</th><th>Trạng thái</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="p in displayedProducts" :key="p.id">
+            <td>{{ p.id }}</td>
+            <td>{{ p.name }}</td>
+            <td>{{ p.category }}</td>
+            <td class="num">{{ formatMoney(p.price) }}</td>
+            <td class="num">{{ p.stock }}</td>
+            <td>
+              <span v-if="p.stock > 0" class="badge in">Còn hàng</span>
+              <span v-else class="badge out">Hết hàng</span>
+            </td>
+            <td><button class="danger" type="button" @click="askDelete(p)">Xóa</button></td>
+          </tr>
+        </tbody>
+      </table>
+      <div v-if="displayedProducts.length === 0" class="empty">Không có sản phẩm phù hợp với bộ lọc hiện tại.</div>
+    </div>
+  </section>
+
+  <div v-if="pendingDelete" class="overlay" @click.self="cancelDelete">
+    <div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dlg-msg">
+      <p id="dlg-msg">Bạn có chắc muốn xóa sản phẩm “{{ pendingDelete.name }}”?</p>
+      <div class="actions">
+        <button class="ghost" type="button" @click="cancelDelete">Hủy</button>
+        <button class="danger" type="button" @click="confirmDelete">Xóa</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mỗi chức năng một file; thứ tự nạp: dữ liệu -> chức năng -> app -->
+<script src="js/data.js"></script>
+<script src="js/features/search.js"></script>
+<script src="js/features/filter.js"></script>
+<script src="js/features/sort.js"></script>
+<script src="js/features/display.js"></script>
+<script src="js/features/add-product.js"></script>
+<script src="js/features/delete-product.js"></script>
+<script src="js/features/stats.js"></script>
+<script src="js/features/keyword-watch.js"></script>
+<script src="js/features/lifecycle.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Giỏ hàng</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.prod.js"></script>
+</head>
+<body>
+<div id="app" class="wrap">
+  <h1>Giỏ hàng</h1>
+  <p v-if="loi" class="loi" role="alert">{{ loi }}</p>
+
+  <section class="gio">
+    <p v-if="gioHang.length === 0" class="trong">Giỏ hàng trống</p>
+
+    <!-- Cha truyền dữ liệu xuống bằng props, con báo ngược lên bằng sự kiện -->
+    <dong-gio-hang
+      v-for="muc in gioHang"
+      :key="muc.id"
+      :muc="muc"
+      @doi-so-luong="xuLyDoiSoLuong"
+      @yeu-cau-xoa="xuLyXoa">
+    </dong-gio-hang>
+  </section>
+
+  <section class="tong">
+    <div>Tổng số lượng: <strong>{{ tongSoLuong }}</strong></div>
+    <div>Tổng tiền: <strong>{{ dinhDangTien(tongTien) }}</strong></div>
+  </section>
+
+  <button type="button" class="phu" @click="khoiPhuc">Khôi phục dữ liệu mẫu</button>
+</div>
+
+<script src="components/DongGioHang.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
