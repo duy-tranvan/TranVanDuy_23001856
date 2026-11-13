@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quản lý sản phẩm</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 30px auto; padding: 0 16px; color: #222; }
+    h1 { text-align: center; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { border: 1px solid #ccc; padding: 8px 10px; }
+    th { background: #f0f3f8; text-align: left; }
+    td.num, th.num { text-align: right; }
+    form { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+    label { display: flex; flex-direction: column; font-size: 14px; gap: 4px; }
+    input { padding: 6px 8px; font-size: 14px; }
+    button { padding: 7px 14px; font-size: 14px; cursor: pointer; }
+    .msg { padding: 10px 12px; margin: 12px 0; border-radius: 4px; }
+    .msg.error { background: #fde8e8; color: #9b1c1c; }
+    .msg.ok { background: #e6f4ea; color: #1e6b34; }
+    .empty { text-align: center; color: #777; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <h1>Quản lý sản phẩm</h1>
+
+  <div v-if="message" class="msg" :class="messageType">{{ message }}</div>
+
+  <!-- Biểu mẫu thêm / sửa -->
+  <form @submit.prevent="save">
+    <label>Tên sản phẩm
+      <input type="text" v-model="form.name" placeholder="Tên sản phẩm">
+    </label>
+    <label>Đơn giá
+      <input type="number" v-model.number="form.price" placeholder="Đơn giá">
+    </label>
+    <label>Số lượng tồn
+      <input type="number" v-model.number="form.stock" placeholder="Số lượng tồn">
+    </label>
+    <button type="submit">Lưu</button>
+    <button type="button" v-if="editingId !== null" @click="resetForm">Hủy</button>
+  </form>
+  <p v-if="editingId !== null">Đang sửa sản phẩm có mã <strong>{{ editingId }}</strong>.</p>
+
+  <!-- Bảng sản phẩm -->
+  <table>
+    <thead>
+      <tr>
+        <th>Tên sản phẩm</th>
+        <th class="num">Đơn giá (đồng)</th>
+        <th class="num">Số lượng tồn</th>
+        <th>Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="p in products" :key="p.id">
+        <td>{{ p.name }}</td>
+        <td class="num">{{ formatPrice(p.price) }}</td>
+        <td class="num">{{ p.stock }}</td>
+        <td>
+          <button @click="startEdit(p)">Sửa</button>
+          <button @click="remove(p)">Xóa</button>
+        </td>
+      </tr>
+      <tr v-if="products.length === 0">
+        <td colspan="4" class="empty">Chưa có sản phẩm nào.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+const API_URL = 'api/products.php';
+
+Vue.createApp({
+  data() {
+    return {
+      products: [],
+      form: { name: '', price: '', stock: '' },
+      editingId: null,   // null: chế độ thêm; số: chế độ sửa theo id
+      message: '',
+      messageType: 'ok'
+    };
+  },
+  mounted() {
+    this.loadProducts();
+  },
+  methods: {
+    // Gọi API, ném lỗi nếu mạng hỏng hoặc API trả success = false
+    async request(url, options = {}) {
+      let res, data;
+      try {
+        res = await fetch(url, options);
+        data = await res.json();
+      } catch (e) {
+        throw new Error('Không kết nối được tới API hoặc phản hồi không hợp lệ.');
+      }
+      if (!data.success) {
+        throw new Error(data.message || 'Đã xảy ra lỗi.');
+      }
+      return data;
+    },
+    showMessage(text, type) {
+      this.message = text;
+      this.messageType = type;
+    },
+    async loadProducts() {
+      try {
+        const data = await this.request(API_URL);
+        this.products = data.data;
+      } catch (e) {
+        this.showMessage(e.message, 'error');
+      }
+    },
+    resetForm() {
+      this.form = { name: '', price: '', stock: '' };
+      this.editingId = null;
+    },
+    startEdit(p) {
+      this.editingId = p.id;
+      this.form = { name: p.name, price: p.price, stock: p.stock };
+      this.message = '';
+    },
+    async save() {
+      const isEdit = this.editingId !== null;
+      const url = isEdit ? `${API_URL}?id=${this.editingId}` : API_URL;
+      try {
+        const data = await this.request(url, {
+          method: isEdit ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(this.form)
+        });
+        this.showMessage(data.message, 'ok');
+        this.resetForm();
+        await this.loadProducts();
+      } catch (e) {
+        this.showMessage(e.message, 'error');
+      }
+    },
+    async remove(p) {
+      if (!confirm(`Bạn có chắc muốn xóa sản phẩm "${p.name}"?`)) {
+        return;
+      }
+      try {
+        const data = await this.request(`${API_URL}?id=${p.id}`, { method: 'DELETE' });
+        this.showMessage(data.message, 'ok');
+        if (this.editingId === p.id) {
+          this.resetForm();
+        }
+        await this.loadProducts();
+      } catch (e) {
+        this.showMessage(e.message, 'error');
+        await this.loadProducts();
+      }
+    },
+    formatPrice(n) {
+      return Number(n).toLocaleString('vi-VN');
+    }
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
